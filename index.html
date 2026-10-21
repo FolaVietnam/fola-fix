@@ -2,15 +2,154 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://hn.ss.bfcplatform.vn; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
   <title>Fola DevDesk</title>
-  <style>
-    :root { color-scheme: light dark; }
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; font: 16px/1.5 system-ui, sans-serif; background: #f4f5f7; color: #111827; }
-    @media (prefers-color-scheme: dark) { body { background: #0b0f17; color: #e5e7eb; } }
-  </style>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <p>Fola <b>DevDesk</b> đang chuẩn bị.</p>
+  <header class="dau">
+    <div class="ten">Fola <b>DevDesk</b></div>
+    <nav>
+      <button class="tab" data-man="gui" aria-current="page">Gửi phiếu</button>
+      <button class="tab" data-man="ds">Phiếu</button>
+      <a class="tab" id="quan-tri" href="/quan-tri/" hidden>Quản trị</a>
+    </nav>
+  </header>
+  <div id="nguoi" class="nguoi" hidden><span id="nguoi-ten"></span><button id="dang-xuat" class="lui" type="button">Đăng xuất</button></div>
+
+  <main>
+    <!-- ĐĂNG NHẬP (chỉ khi mở từ xa) -->
+    <section id="man-dn" class="man" hidden>
+      <form id="dn-form" class="dn" autocomplete="off">
+        <h1>Đăng nhập</h1>
+        <input id="dn-ten" placeholder="Tên đăng nhập" autocapitalize="none" spellcheck="false">
+        <input id="dn-ma" placeholder="Mã 6 số" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+        <button id="dn-nut" class="chinh" type="submit">Vào</button>
+      </form>
+      <div id="dn-cho" class="dn" hidden>
+        <h1>Chờ duyệt thiết bị</h1>
+        <p class="phu">Admin bấm Duyệt trên máy build là vào được.</p>
+        <div class="xoay"></div>
+      </div>
+      <p class="loi" id="dn-loi"></p>
+    </section>
+
+    <!-- GỬI PHIẾU -->
+    <section id="man-gui" class="man">
+      <form id="f" novalidate>
+        <div class="nhom">
+          <div class="nut-chon" data-ten="loai">
+            <button type="button" data-v="bug" class="chon">Lỗi</button>
+            <button type="button" data-v="feature">Tính năng</button>
+            <button type="button" data-v="hotfix">Hotfix</button>
+          </div>
+        </div>
+
+        <div class="nhom">
+          <label>Ứng dụng</label>
+          <div class="nut-chon nho" data-ten="app_dich">
+            <button type="button" data-v="capture">FolaCapture</button>
+            <button type="button" data-v="booth">Fola.Booth</button>
+            <button type="button" data-v="quay">Quầy</button>
+            <button type="button" data-v="webapp">Webapp</button>
+            <button type="button" data-v="trinh_cai">Trình cài</button>
+            <button type="button" data-v="khac">Khác</button>
+          </div>
+          <p class="loi" data-loi="app_dich"></p>
+        </div>
+
+        <div class="nhom">
+          <label for="tieu_de">Tiêu đề</label>
+          <input id="tieu_de" name="tieu_de" maxlength="140" autocomplete="off" placeholder="Máy in không ra ảnh sau khi bấm In">
+          <p class="loi" data-loi="tieu_de"></p>
+        </div>
+
+        <div class="o-loi">
+          <div class="nhom">
+            <label for="dang_lam">Đang làm gì</label>
+            <textarea id="dang_lam" name="dang_lam" rows="2" placeholder="Khách bấm In ở màn Hoàn tất"></textarea>
+            <p class="loi" data-loi="dang_lam"></p>
+          </div>
+          <div class="nhom">
+            <label for="thay_gi">Thấy gì</label>
+            <textarea id="thay_gi" name="thay_gi" rows="3" placeholder="Màn đứng 10 giây rồi về màn chờ, máy in không chạy"></textarea>
+            <p class="loi" data-loi="thay_gi"></p>
+          </div>
+          <div class="nhom">
+            <label for="mong_muon">Mong muốn gì</label>
+            <textarea id="mong_muon" name="mong_muon" rows="2" placeholder="In ra 2 tấm như bình thường"></textarea>
+            <p class="loi" data-loi="mong_muon"></p>
+          </div>
+        </div>
+
+        <div class="o-tinh-nang" hidden>
+          <div class="nhom">
+            <label for="can_gi">Cần gì</label>
+            <textarea id="can_gi" name="can_gi" rows="3" placeholder="Cho chọn khung theo từng Event"></textarea>
+            <p class="loi" data-loi="can_gi"></p>
+          </div>
+          <div class="nhom">
+            <label for="giup_khach">Giúp khách thế nào</label>
+            <textarea id="giup_khach" name="giup_khach" rows="2" placeholder="Shop đổi khung theo mùa không cần gọi kỹ thuật"></textarea>
+            <p class="loi" data-loi="giup_khach"></p>
+          </div>
+        </div>
+
+        <div class="nhom">
+          <label>Ưu tiên</label>
+          <div class="nut-chon nho" data-ten="uu_tien">
+            <button type="button" data-v="1">Khẩn</button>
+            <button type="button" data-v="2">Cao</button>
+            <button type="button" data-v="3" class="chon">Thường</button>
+            <button type="button" data-v="4">Thấp</button>
+          </div>
+        </div>
+
+        <details class="nhom may">
+          <summary>Máy / trạm</summary>
+          <div class="hang">
+            <input name="machine_id" maxlength="8" placeholder="Mã máy (8 ký tự)" autocomplete="off" spellcheck="false">
+            <input name="ten_tram" maxlength="60" placeholder="Tên trạm">
+            <input name="ban_dang_chay" maxlength="20" placeholder="Bản (1.2.218)">
+          </div>
+          <p class="loi" data-loi="machine_id"></p>
+        </details>
+
+        <div class="nhom">
+          <div id="tha" class="tha" tabindex="0" role="button">
+            <span>Kéo ảnh, clip, log vào đây</span>
+            <small>hoặc bấm để chọn</small>
+            <input id="chon-tep" type="file" multiple hidden
+              accept="image/*,video/*,.pdf,.docx,.txt,.md,.json,.csv,.xlsx,.log">
+          </div>
+          <ul id="ds-tep" class="ds-tep"></ul>
+          <p class="loi" id="loi-tep"></p>
+        </div>
+
+        <div class="gui">
+          <div id="tien-do" class="tien-do" hidden><i></i></div>
+          <button id="nut-gui" type="submit" class="chinh">Gửi phiếu</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- DANH SÁCH -->
+    <section id="man-ds" class="man" hidden>
+      <ul id="ds-phieu" class="ds-phieu"></ul>
+    </section>
+
+    <!-- CHI TIẾT -->
+    <section id="man-ct" class="man" hidden>
+      <button class="lui" data-man="ds">← Phiếu</button>
+      <article id="ct"></article>
+    </section>
+  </main>
+
+  <div id="bao" class="bao" role="status" hidden></div>
+  <script src="app.js" type="module"></script>
 </body>
 </html>
