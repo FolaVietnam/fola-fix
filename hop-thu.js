@@ -69,7 +69,8 @@ export async function choTraLoiDangNhap(huy = { dung: false }) {
   for (;;) {
     if (huy.dung) return null;
     if (Date.now() - cho.luc > 86400_000) { await ghi('dn-cho'); throw new Error('Hết thời gian chờ — đăng nhập lại'); }
-    const r = await fetch(cho.get + '&_=' + Date.now(), { cache: 'no-store' }).catch(() => null);
+    // URL đã ký sẵn: KHÔNG thêm tham số (vd &_=giờ) — S3 thật trả 403 vì sai chữ ký. Chống đệm bằng cache: 'no-store'.
+    const r = await fetch(cho.get, { cache: 'no-store' }).catch(() => null);
     if (r?.ok) {
       const tl = await mo(new Uint8Array(await r.arrayBuffer()));
       if (tl.ket_qua === 'ok') {
@@ -128,7 +129,7 @@ export async function docTrangThai() {
     const n = await appsScript({ lenh: 'nhan', token: phien.token });
     nhanUrl = { url: n.url, het: Math.min(n.het, Date.now() + 11 * 3600_000) };
   }
-  const r = await fetch(nhanUrl.url + '&_=' + Date.now(), { cache: 'no-store' });
+  const r = await fetch(nhanUrl.url, { cache: 'no-store' });
   if (r.status === 404) return (await doc('trang-thai')) ?? null;
   if (!r.ok) throw new Error('Không đọc được trạng thái (' + r.status + ')');
   const tt = await mo(new Uint8Array(await r.arrayBuffer()));
