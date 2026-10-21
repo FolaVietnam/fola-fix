@@ -12,6 +12,7 @@ const TEN_TT = { MOI: 'Mới', DANG_XEM: 'Đang xem', CO_BAN_SUA: 'Có bản s�
 let tepChon = [];
 let gioiHan = null;
 let phieuDangXem = null;
+let suaId = null;       // đang sửa phiếu nào (CEO 22/10: người gửi sửa 1 lần khi phiếu còn Mới)
 
 // Tại máy build ⇒ gọi thẳng Core. Nơi khác (GitHub Pages / fix.fola.vn) ⇒ đi qua hộp thư S3 đã mã hoá.
 const TAI_CHO = ['127.0.0.1', 'localhost'].includes(location.hostname);
@@ -156,6 +157,7 @@ $('#f').addEventListener('submit', (e) => {
     if (o.value.trim()) fd.append(o.name, o.value.trim());
   }
   for (const f of tepChon) fd.append('tep', f, f.name);
+  if (suaId != null) fd.append('sua', String(suaId));
 
   const nut = $('#nut-gui');
   const td = $('#tien-do');
@@ -172,12 +174,13 @@ $('#f').addEventListener('submit', (e) => {
     let r = {};
     try { r = JSON.parse(x.responseText || '{}'); } catch { /* bỏ */ }
     if (x.status === 201) {
-      bao(`Đã gửi ${r.so_phieu}`);
+      bao(suaId != null ? `Đã lưu bản sửa ${r.so_phieu}` : `Đã gửi ${r.so_phieu}`);
       lamMoiForm();
       moChiTiet(r.id);
       return;
     }
     if (x.status === 400) {
+      if (r.loi?.chung) bao(r.loi.chung, true);
       for (const [k, v] of Object.entries(r.loi ?? {})) datLoi(k, v);
       $('#loi-tep').textContent = (r.loi_tep ?? []).join(' · ');
       return;
@@ -196,7 +199,7 @@ async function guiQuaHopThu(fd, nut, td) {
   try {
     const gid = await ht.guiPhieu(duLieu, tep, (p) => { td.firstElementChild.style.width = `${p * 100}%`; });
     choKetQua.set(gid, Date.now());
-    bao(`Đã gửi · kèm ${tep.length} tệp — chờ máy build nhận`);
+    bao(`${suaId != null ? 'Đã gửi bản sửa' : 'Đã gửi'} · kèm ${tep.length} tệp — chờ máy build nhận`);
     lamMoiForm();
     moMan('ds');
   } catch (err) {
@@ -216,7 +219,28 @@ function lamMoiForm() {
   $('.nut-chon[data-ten="loai"] [data-v="bug"]').classList.add('chon');
   $('.nut-chon[data-ten="uu_tien"] [data-v="3"]').classList.add('chon');
   doiLoai('bug');
+  suaId = null;
+  $('#dang-sua').hidden = true;
+  $('#nut-gui').textContent = 'Gửi phiếu';
 }
+
+/** Mở form điền sẵn phiếu cũ. Tệp cũ giữ nguyên; tệp chọn thêm được thêm vào phiếu. */
+function batDauSua(p) {
+  lamMoiForm();
+  const chon = (ten, v) => { for (const b of $$(`.nut-chon[data-ten="${ten}"] button`)) b.classList.toggle('chon', b.dataset.v === String(v)); };
+  chon('loai', p.loai);
+  chon('app_dich', p.app_dich);
+  chon('uu_tien', p.uu_tien);
+  doiLoai(p.loai);
+  for (const o of $$('#f input[name], #f textarea[name]')) o.value = p[o.name] ?? '';
+  suaId = p.id;
+  $('#dang-sua span').textContent = `Đang sửa ${p.so_phieu} — chỉ sửa được 1 lần. ${p.tep.length} tệp cũ giữ nguyên; tệp chọn thêm sẽ được thêm vào.`;
+  $('#dang-sua').hidden = false;
+  $('#nut-gui').textContent = `Lưu sửa ${p.so_phieu}`;
+  moMan('gui');
+  scrollTo(0, 0);
+}
+$('#huy-sua').addEventListener('click', () => { lamMoiForm(); moMan('ds'); });
 
 // ── Danh sách ──
 async function taiDanhSach() {
@@ -282,8 +306,20 @@ async function veChiTiet(id) {
   const gt = [p.dang_lam, p.thay_gi, p.mong_muon, p.can_gi, p.giup_khach].filter(Boolean);
   $$('.gia-tri', ct).forEach((el, i) => { el.textContent = gt[i]; });
 
+  if (p.sua_lan > 0) $('.phu', ct).append(' · đã sửa');
+
   const khoi = $('.tep-ct', ct);
   for (const a of p.tep) khoi.append(veTepChiTiet(a));
+
+  const cuaToi = TAI_CHO || p.nguoi_gui === trangThai?.nguoi?.ten_dang_nhap;
+  if (cuaToi && p.trang_thai === 'MOI' && !(p.sua_lan > 0)) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'nut-phu';
+    b.textContent = 'Sửa phiếu (được 1 lần)';
+    b.onclick = () => batDauSua(p);
+    ct.append(b);
+  }
 }
 
 function veTepChiTiet(a) {
@@ -367,7 +403,7 @@ async function vongTrangThai() {
         for (const kq of tt.ket_qua_gui ?? []) {
           if (!choKetQua.has(kq.gid)) continue;
           choKetQua.delete(kq.gid);
-          if (kq.so_phieu) bao(`Máy build đã nhận ${kq.so_phieu}`);
+          if (kq.so_phieu) bao(kq.da_sua ? `Máy build đã nhận bản sửa ${kq.so_phieu}` : `Máy build đã nhận ${kq.so_phieu}`);
           else bao('Phiếu bị trả lại: ' + [...Object.values(kq.loi ?? {}), ...(kq.loi_tep ?? [])].join(' · '), true);
         }
         if (!$('#man-ds').hidden) taiDanhSach();
@@ -376,7 +412,11 @@ async function vongTrangThai() {
     } catch (err) {
       if (err.ma === 'token') { await ht.dangXuat(); dangHoi = false; return hienDangNhap(); }
     }
-    await new Promise((ok) => setTimeout(ok, document.hidden ? 60_000 : 3000));
+    // Tab ẩn hỏi thưa (60 giây); quay lại tab (vd từ app Ảnh về) thì hỏi ngay.
+    await new Promise((ok) => {
+      const h = setTimeout(ok, document.hidden ? 60_000 : 3000);
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) { clearTimeout(h); ok(); } }, { once: true });
+    });
   }
 }
 
