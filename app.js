@@ -190,10 +190,13 @@ $('#f').addEventListener('submit', (e) => {
 async function guiQuaHopThu(fd, nut, td) {
   const duLieu = {};
   for (const [k, v] of fd.entries()) if (k !== 'tep') duLieu[k] = v;
+  const tep = [...tepChon];
+  // Chẩn đoán (22/10: iPhone gửi phiếu mất ảnh): số tệp trong danh sách / đang hiện / trong FormData — Core ghi nhật ký.
+  duLieu.chan_doan = { tep: tep.length, hien: $$('#ds-tep li').length, fd: fd.getAll('tep').length, byte: tep.map((f) => f.size), ua: navigator.userAgent.slice(0, 120) };
   try {
-    const gid = await ht.guiPhieu(duLieu, [...tepChon], (p) => { td.firstElementChild.style.width = `${p * 100}%`; });
+    const gid = await ht.guiPhieu(duLieu, tep, (p) => { td.firstElementChild.style.width = `${p * 100}%`; });
     choKetQua.set(gid, Date.now());
-    bao('Đã gửi — chờ máy build nhận');
+    bao(`Đã gửi · kèm ${tep.length} tệp — chờ máy build nhận`);
     lamMoiForm();
     moMan('ds');
   } catch (err) {
