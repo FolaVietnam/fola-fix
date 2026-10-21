@@ -416,6 +416,8 @@ async function batDauOXa() {
 }
 
 $('#dang-xuat')?.addEventListener('click', async () => { await ht?.dangXuat(); location.reload(); });
+// Gói đăng nhập lạc / gõ nhầm tên ⇒ thoát màn chờ, gửi lại từ đầu (thiết bị giữ nguyên khoá).
+$('#dn-lai')?.addEventListener('click', async () => { await ht?.dangXuat(); location.reload(); });
 
 (async () => {
   if (TAI_CHO) {

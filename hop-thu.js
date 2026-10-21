@@ -87,6 +87,7 @@ export async function choTraLoiDangNhap(huy = { dung: false }) {
 
 export async function dangXuat() {
   await ghi('phien');
+  await ghi('dn-cho');
   await ghi('trang-thai');
   nhanUrl = null;
 }
